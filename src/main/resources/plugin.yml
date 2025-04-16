@@ -1,0 +1,4 @@
+name: GlassBridge
+main: net.hypedmc.glassbridge.GlassBridge
+version: 1.0
+authors: [Jobs]
