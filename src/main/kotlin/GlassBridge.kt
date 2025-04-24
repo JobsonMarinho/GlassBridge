@@ -15,6 +15,7 @@ import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerMoveEvent
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.util.Vector
+import kotlin.math.floor
 import kotlin.random.Random
 
 class GlassBridge : JavaPlugin(), Listener {
@@ -158,25 +159,36 @@ class GlassBridge : JavaPlugin(), Listener {
         if (!isRunning) return
 
         val player = event.player
-        val blockBelow = player.location.clone().subtract(0.0, 1.0, 0.0).block
-        val steppedLoc = blockBelow.location
+        val world = player.world
+        if (world.name != "world") return
+        val baseY = player.location.blockY - 1
 
-        val iterator = fakePlatforms.iterator()
-        while (iterator.hasNext()) {
-            val platform = iterator.next()
-            if (platform.any { platformBlock ->
-                    platformBlock.world == steppedLoc.world &&
-                            platformBlock.blockX == steppedLoc.blockX &&
-                            platformBlock.blockY == steppedLoc.blockY &&
-                            platformBlock.blockZ == steppedLoc.blockZ
-                }) {
+        val offsets = listOf(
+            Pair(0.0, 0.0),
+            Pair(0.3, 0.3),
+            Pair(0.3, -0.3),
+            Pair(-0.3, 0.3),
+            Pair(-0.3, -0.3)
+        )
+
+        fakePlatforms.toList().forEach { platform ->
+            val hit = offsets.any { (dx, dz) ->
+                val x = floor(player.location.x + dx).toInt()
+                val z = floor(player.location.z + dz).toInt()
+                platform.any { loc ->
+                    loc.blockX == x && loc.blockY == baseY && loc.blockZ == z
+                }
+            }
+            if (hit) {
+                player.velocity.zero()
                 platform.forEach { loc ->
                     loc.world.getBlockAt(loc).type = Material.AIR
                 }
-                iterator.remove()
-                player.velocity = Vector(0.0, -2.0, 0.0)
-                break
+                fakePlatforms.remove(platform)
+                player.velocity = Vector(0.0, -4.0, 0.0)
+                return
             }
         }
     }
+
 }
